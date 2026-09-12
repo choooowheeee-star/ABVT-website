@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Order Website</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --primary-hover: #1b5e20;
+            --bg-color: #f9f9f9;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        h2 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .product-card h3 {
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .product-price {
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Cart Section */
+        .cart-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+
+        .cart-items {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1rem 0;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item-details {
+            font-size: 0.9rem;
+        }
+
+        .remove-btn {
+            background: #d32f2f;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+        }
+
+        .remove-btn:hover {
+            background: #b71c1c;
+        }
+
+        .cart-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+
+        /* Checkout Form */
+        .checkout-form input {
+            width: 100%;
+            padding: 0.6rem;
+            margin-bottom: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .checkout-form button {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>QuickShop Store</h1>
+        <p>Select your items and place your order instantly!</p>
+    </header>
+
+    <div class="container">
+        <!-- Product Catalog -->
+        <div>
+            <h2>Our Products</h2>
+            <div class="products-grid" id="products-grid">
+                <!-- Products will be injected dynamically via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Cart & Checkout -->
+        <div class="cart-section">
+            <h2>Your Cart</h2>
+            <ul class="cart-items" id="cart-items">
+                <li style="color: #77; text-align: center;">Cart is empty</li>
+            </ul>
+            <div class="cart-total" id="cart-total">Total: $0.00</div>
+
+            <div class="checkout-form">
+                <h2>Checkout</h2>
+                <input type="text" id="customer-name" placeholder="Full Name" required>
+                <input type="text" id="customer-address" placeholder="Delivery Address" required>
+                <input type="tel" id="customer-phone" placeholder="Phone Number" required>
+                <button onclick="placeOrder()">Place Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample Products Database
+        const products = [
+            { id: 1, name: "Wireless Mouse", price: 25.00 },
+            { id: 2, name: "Mechanical Keyboard", price: 65.00 },
+            { id: 3, name: "Gaming Headset", price: 45.00 },
+            { id: 4, name: "HD Monitor", price: 150.00 },
+            { id: 5, name: "USB-C Hub", price: 20.00 }
+        ];
+
+        let cart = [];
+
+        // Render Products on Page Load
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <div>
+                        <h3>${product.name}</h3>
+                        <div class="product-price">$${product.price.toFixed(2)}</div>
+                    </div>
+                    <button onclick="addToCart(${product.id})">Add to Cart</button>
+                </div>
+            `).join('');
+        }
+
+        // Add Product to Cart
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const cartItem = cart.find(item => item.id === productId);
+
+            if (cartItem) {
+                cartItem.quantity++;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            renderCart();
+        }
+
+        // Remove Product from Cart
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            renderCart();
+        }
+
+        // Render Cart items and calculate total
+        function renderCart() {
+            const cartList = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+
+            if (cart.length === 0) {
+                cartList.innerHTML = '<li style="color: #777; text-align: center;">Cart is empty</li>';
+                cartTotal.innerHTML = 'Total: $0.00';
+                return;
+            }
+
+            let total = 0;
+            cartList.innerHTML = cart.map(item => {
+                total += item.price * item.quantity;
+                return `
+                    <li class="cart-item">
+                        <div class="cart-item-details">
+                            <strong>${item.name}</strong><br>
+                            $${item.price.toFixed(2)} x ${item.quantity}
+                        </div>
+                        <button class="remove-btn" onclick="removeFromCart(${item.id})">X</button>
+                    </li>
+                `;
+            }).join('');
+
+            cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;
+        }
+
+        // Handle Order Placement
+        function placeOrder() {
+            const name = document.getElementById('customer-name').value.trim();
+            const address = document.getElementById('customer-address').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+
+            if (!name || !address || !phone) {
+                alert('Please fill out all checkout fields.');
+                return;
+            }
+
+            // Simulate Order Success
+            alert(`Thank you for your order, ${name}!\nYour items will be shipped to ${address}.`);
+            
+            // Reset Cart and Form
+            cart = [];
+            renderCart();
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-address').value = '';
+            document.getElementById('customer-phone').value = '';
+        }
+
+        // Initialize the app
+        renderProducts();
+    </script>
+</body>
+</html>
