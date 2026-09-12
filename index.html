@@ -230,8 +230,8 @@
 <body>
 
     <header>
-        <h1>QuickShop Store</h1>
-        <p>Select your sizes, colors, quantities (1-20) and upload payment receipt instantly!</p>
+        <h1>ABVT Store</h1>
+        <p>Select your sizes, colors, quantities and upload payment receipt instantly!</p>
     </header>
 
     <div class="container">
@@ -267,7 +267,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyEaq5yv9dKoMlMrBgZxJdNHHCloQWXPQyeC5WkOGbjz8wCL-DG7VmG_NPiTUPNwtK3Zw/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw_WzL4oVqtg3OabxGVzqT1133xe-5qLNBJhyRFB2tfx_9DAAQZ1rIcbWR5oE2HjJGOBQ/exec";
 
         const products = [
             { 
@@ -304,8 +304,6 @@
                 const response = await fetch(`${WEB_APP_URL}?action=getInventory`);
                 const inventoryData = await response.json();
                 
-                // Expecting inventoryData to map product names or IDs to their total ordered quantity
-                // e.g. { "Light Blue T-Shirt": 200, "Black T-Shirt": 45, ... }
                 if (inventoryData && typeof inventoryData === 'object') {
                     products.forEach(product => {
                         if (inventoryData[product.name] >= 200) {
@@ -355,7 +353,7 @@
                                 <select id="option-${product.id}">
                                     ${optionsHtml}
                                 </select>
-                                <label>Quantity (1-20):</label>
+                                <label>Quantity:</label>
                                 <select id="qty-${product.id}">
                                     ${qtyOptionsHtml}
                                 </select>
