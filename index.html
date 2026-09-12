@@ -3,28 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Order Website</title>
+    <title>QuickShop Order Website</title>
     <style>
         :root {
-            --primary-color: #2e7d32;
-            --primary-hover: #1b5e20;
-            --bg-color: #f9f9f9;
-            --text-color: #333;
+            --primary-color: #00838f; /* Deep Teal */
+            --primary-hover: #005f66; /* Darker Teal */
+            --bg-color: #f4fcfc;
+            --text-color: #2b3a3a;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
+            /* Sets your image as the background, covering the screen and fixed in place */
+            background: url('background.png') no-repeat center center fixed;
+            background-size: cover;
             color: var(--text-color);
+            min-height: 100vh;
         }
 
         header {
-            background-color: var(--primary-color);
+            background-color: rgba(0, 131, 143, 0.9); /* Semi-transparent teal */
             color: white;
             padding: 1.5rem;
             text-align: center;
+            backdrop-filter: blur(5px);
         }
 
         .container {
@@ -43,9 +47,19 @@
         }
 
         h2 {
-            border-bottom: 2px solid #ddd;
+            border-bottom: 2px solid rgba(0, 131, 143, 0.3);
             padding-bottom: 0.5rem;
             margin-top: 0;
+            color: #005f66;
+        }
+
+        /* Glassmorphism panel style for readability over the background image */
+        .panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         /* Products Grid */
@@ -56,13 +70,14 @@
         }
 
         .product-card {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
             padding: 1rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            border: 1px solid rgba(0, 131, 143, 0.2);
         }
 
         .product-card h3 {
@@ -94,10 +109,6 @@
 
         /* Cart Section */
         .cart-section {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             height: fit-content;
         }
 
@@ -114,7 +125,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 0.5rem 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #ddd;
         }
 
         .cart-item-details {
@@ -122,20 +133,21 @@
         }
 
         .remove-btn {
-            background: #d32f2f;
+            background: #b71c1c;
             padding: 0.3rem 0.6rem;
             font-size: 0.8rem;
         }
 
         .remove-btn:hover {
-            background: #b71c1c;
+            background: #7f0000;
         }
 
         .cart-total {
             font-size: 1.2rem;
             font-weight: bold;
             text-align: right;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-hover);
         }
 
         /* Checkout Form */
@@ -143,9 +155,16 @@
             width: 100%;
             padding: 0.6rem;
             margin-bottom: 0.8rem;
-            border: 1px solid #ccc;
+            border: 1px solid #b2dfdb;
             border-radius: 4px;
             box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .checkout-form input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(0, 131, 143, 0.3);
         }
 
         .checkout-form button {
@@ -162,20 +181,20 @@
 
     <div class="container">
         <!-- Product Catalog -->
-        <div>
+        <div class="panel">
             <h2>Our Products</h2>
             <div class="products-grid" id="products-grid">
-                <!-- Products will be injected dynamically via JavaScript -->
+                <!-- Products injected via JavaScript -->
             </div>
         </div>
 
         <!-- Cart & Checkout -->
-        <div class="cart-section">
+        <div class="panel cart-section">
             <h2>Your Cart</h2>
             <ul class="cart-items" id="cart-items">
-                <li style="color: #777; text-align: center;">Cart is empty</li>
+                <li style="color: #666; text-align: center;">Cart is empty</li>
             </ul>
-            <div class="cart-total" id="cart-total">Total: $0.00</div>
+            <div class="cart-total" id="cart-total">Total: ₱0.00</div>
 
             <div class="checkout-form">
                 <h2>Checkout</h2>
@@ -188,7 +207,7 @@
     </div>
 
     <script>
-        // Updated Products Database
+        // Updated T-Shirt and Cap Database with specific pricing
         const products = [
             { id: 1, name: "Light Blue T-Shirt", price: 499.00 },
             { id: 2, name: "Black T-Shirt", price: 499.00 },
@@ -204,7 +223,7 @@
                 <div class="product-card">
                     <div>
                         <h3>${product.name}</h3>
-                        <div class="product-price">$${product.price.toFixed(2)}</div>
+                        <div class="product-price">₱${product.price.toFixed(2)}</div>
                     </div>
                     <button onclick="addToCart(${product.id})">Add to Cart</button>
                 </div>
@@ -236,8 +255,8 @@
             const cartTotal = document.getElementById('cart-total');
 
             if (cart.length === 0) {
-                cartList.innerHTML = '<li style="color: #777; text-align: center;">Cart is empty</li>';
-                cartTotal.innerHTML = 'Total: $0.00';
+                cartList.innerHTML = '<li style="color: #666; text-align: center;">Cart is empty</li>';
+                cartTotal.innerHTML = 'Total: ₱0.00';
                 return;
             }
 
@@ -248,14 +267,14 @@
                     <li class="cart-item">
                         <div class="cart-item-details">
                             <strong>${item.name}</strong><br>
-                            $${item.price.toFixed(2)} x ${item.quantity}
+                            ₱${item.price.toFixed(2)} x ${item.quantity}
                         </div>
                         <button class="remove-btn" onclick="removeFromCart(${item.id})">X</button>
                     </li>
                 `;
             }).join('');
 
-            cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;
+            cartTotal.innerHTML = `Total: ₱${total.toFixed(2)}`;
         }
 
         // Handle Order Placement
