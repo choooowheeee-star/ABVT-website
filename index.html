@@ -78,6 +78,11 @@
             border: 1px solid rgba(0, 131, 143, 0.2);
         }
 
+        .product-card.sold-out {
+            opacity: 0.7;
+            background: rgba(240, 240, 240, 0.9);
+        }
+
         .product-card h3 {
             margin: 0.5rem 0;
             font-size: 1.1rem;
@@ -88,6 +93,14 @@
             font-weight: bold;
             font-size: 1.1rem;
             margin-bottom: 0.8rem;
+        }
+
+        .sold-out-badge {
+            color: #b71c1c;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 1rem 0;
         }
 
         .product-options {
@@ -126,6 +139,11 @@
 
         button:hover {
             background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            background-color: #b0bec5;
+            cursor: not-allowed;
         }
 
         /* Cart Section */
@@ -213,7 +231,7 @@
 
     <header>
         <h1>QuickShop Store</h1>
-        <p>Select your sizes, colors, quantities and upload payment receipt instantly!</p>
+        <p>Select your sizes, colors, quantities (1-20) and upload payment receipt instantly!</p>
     </header>
 
     <div class="container">
@@ -249,7 +267,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw_WzL4oVqtg3OabxGVzqT1133xe-5qLNBJhyRFB2tfx_9DAAQZ1rIcbWR5oE2HjJGOBQ/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyEaq5yv9dKoMlMrBgZxJdNHHCloQWXPQyeC5WkOGbjz8wCL-DG7VmG_NPiTUPNwtK3Zw/exec";
 
         const products = [
             { 
@@ -257,31 +275,75 @@
                 name: "Light Blue T-Shirt", 
                 price: 499.00, 
                 type: "shirt", 
-                options: ["S", "M", "L", "XL", "XXL"] 
+                options: ["S", "M", "L", "XL", "XXL"],
+                soldOut: false 
             },
             { 
                 id: 2, 
                 name: "Black T-Shirt", 
                 price: 499.00, 
                 type: "shirt", 
-                options: ["S", "M", "L", "XL", "XXL"] 
+                options: ["S", "M", "L", "XL", "XXL"],
+                soldOut: false 
             },
             { 
                 id: 3, 
                 name: "Two-Toned Cap", 
                 price: 199.00, 
                 type: "cap", 
-                options: ["Cream and Brown", "Aqua and Blue"] 
+                options: ["Cream and Brown", "Aqua and Blue"],
+                soldOut: false 
             }
         ];
 
         let cart = [];
 
+        // Fetch inventory status from Google Sheets backend on load
+        async function fetchInventoryStatus() {
+            try {
+                const response = await fetch(`${WEB_APP_URL}?action=getInventory`);
+                const inventoryData = await response.json();
+                
+                // Expecting inventoryData to map product names or IDs to their total ordered quantity
+                // e.g. { "Light Blue T-Shirt": 200, "Black T-Shirt": 45, ... }
+                if (inventoryData && typeof inventoryData === 'object') {
+                    products.forEach(product => {
+                        if (inventoryData[product.name] >= 200) {
+                            product.soldOut = true;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.log('Could not fetch live inventory counts, defaulting to available stock.', error);
+            } finally {
+                renderProducts();
+            }
+        }
+
         function renderProducts() {
             const grid = document.getElementById('products-grid');
             grid.innerHTML = products.map(product => {
+                if (product.soldOut) {
+                    return `
+                        <div class="product-card sold-out">
+                            <div>
+                                <h3>${product.name}</h3>
+                                <div class="product-price">₱${product.price.toFixed(2)}</div>
+                                <div class="sold-out-badge">SOLD OUT</div>
+                            </div>
+                            <button disabled>Unavailable</button>
+                        </div>
+                    `;
+                }
+
                 let optionLabel = product.type === 'shirt' ? 'Size:' : 'Color:';
                 let optionsHtml = product.options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+                
+                // Generate quantity dropdown options from 1 to 20
+                let qtyOptionsHtml = '';
+                for (let i = 1; i <= 20; i++) {
+                    qtyOptionsHtml += `<option value="${i}">${i}</option>`;
+                }
 
                 return `
                     <div class="product-card">
@@ -293,8 +355,10 @@
                                 <select id="option-${product.id}">
                                     ${optionsHtml}
                                 </select>
-                                <label>Quantity:</label>
-                                <input type="number" id="qty-${product.id}" value="1" min="1">
+                                <label>Quantity (1-20):</label>
+                                <select id="qty-${product.id}">
+                                    ${qtyOptionsHtml}
+                                </select>
                             </div>
                         </div>
                         <button onclick="addToCart(${product.id})">Add to Cart</button>
@@ -305,13 +369,29 @@
 
         function addToCart(productId) {
             const product = products.find(p => p.id === productId);
+            if (product.soldOut) {
+                alert('This item is sold out.');
+                return;
+            }
+
             const selectedOption = document.getElementById(`option-${productId}`).value;
             const quantityInput = parseInt(document.getElementById(`qty-${productId}`).value) || 1;
 
             const cartItemKey = `${productId}-${selectedOption}`;
             const existingItem = cart.find(item => item.key === cartItemKey);
 
+            let currentCartTotalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
+            
+            if (currentCartTotalQuantity + quantityInput > 200) {
+                alert('Cannot add items. Maximum total quantity limit of 200 items per order reached.');
+                return;
+            }
+
             if (existingItem) {
+                if (existingItem.quantity + quantityInput > 200) {
+                    alert('You cannot exceed a total quantity of 200 for this item.');
+                    return;
+                }
                 existingItem.quantity += quantityInput;
             } else {
                 cart.push({
@@ -363,10 +443,10 @@
 
         // Helper function to convert uploaded file into Base64 for the Apps Script payload
         function getFileBase64(file) {
-            return new Promise((resolve, reject) => {
+            return new Promise((r, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onload = () => r(reader.result.split(',')[1]);
                 reader.onerror = error => reject(error);
             });
         }
@@ -396,7 +476,6 @@
                 let total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 let orderSummaryText = cart.map(i => `${i.name} (${i.type === 'shirt' ? 'Size' : 'Color'}: ${i.variant}) x ${i.quantity}`).join(', ');
 
-                // Convert payment screenshot file to Base64
                 const file = fileInput.files[0];
                 const base64Data = await getFileBase64(file);
 
@@ -421,7 +500,6 @@
 
                 alert(`Thank you for your order, ${name}!\nYour payment screenshot was uploaded, and a confirmation email has been sent to ${email}.`);
                 
-                // Reset Cart and Form
                 cart = [];
                 renderCart();
                 document.getElementById('customer-name').value = '';
@@ -429,6 +507,9 @@
                 document.getElementById('customer-address').value = '';
                 document.getElementById('customer-phone').value = '';
                 fileInput.value = '';
+
+                // Refresh inventory status after placing an order
+                fetchInventoryStatus();
 
             } catch (error) {
                 console.error('Error:', error);
@@ -439,7 +520,8 @@
             }
         }
 
-        renderProducts();
+        // Initialize by fetching inventory status or rendering products
+        fetchInventoryStatus();
     </script>
 </body>
 </html>
