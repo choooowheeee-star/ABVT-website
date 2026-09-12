@@ -16,7 +16,6 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            /* Sets your image as the background, covering the screen and fixed in place */
             background: url('background.png') no-repeat center center fixed;
             background-size: cover;
             color: var(--text-color);
@@ -24,7 +23,7 @@
         }
 
         header {
-            background-color: rgba(0, 131, 143, 0.9); /* Semi-transparent teal */
+            background-color: rgba(0, 131, 143, 0.9);
             color: white;
             padding: 1.5rem;
             text-align: center;
@@ -53,7 +52,6 @@
             color: #005f66;
         }
 
-        /* Glassmorphism panel style for readability over the background image */
         .panel {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(8px);
@@ -65,7 +63,7 @@
         /* Products Grid */
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 1.5rem;
         }
 
@@ -89,7 +87,30 @@
             color: var(--primary-color);
             font-weight: bold;
             font-size: 1.1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .product-options {
+            margin-bottom: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+        }
+
+        .product-options label {
+            font-weight: 600;
+            color: #005f66;
+        }
+
+        .product-options select, 
+        .product-options input {
+            padding: 0.4rem;
+            border: 1px solid #b2dfdb;
+            border-radius: 4px;
+            background: white;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         button {
@@ -176,7 +197,7 @@
 
     <header>
         <h1>QuickShop Store</h1>
-        <p>Select your items and place your order instantly!</p>
+        <p>Select your sizes, colors, quantities and place your order instantly!</p>
     </header>
 
     <div class="container">
@@ -207,11 +228,29 @@
     </div>
 
     <script>
-        // Updated T-Shirt and Cap Database with specific pricing
+        // Updated Database with T-Shirts (Sizes) and Caps (Two-toned colors)
         const products = [
-            { id: 1, name: "Light Blue T-Shirt", price: 499.00 },
-            { id: 2, name: "Black T-Shirt", price: 499.00 },
-            { id: 3, name: "Cap", price: 199.00 }
+            { 
+                id: 1, 
+                name: "Light Blue T-Shirt", 
+                price: 499.00, 
+                type: "shirt", 
+                options: ["S", "M", "L", "XL", "XXL"] 
+            },
+            { 
+                id: 2, 
+                name: "Black T-Shirt", 
+                price: 499.00, 
+                type: "shirt", 
+                options: ["S", "M", "L", "XL", "XXL"] 
+            },
+            { 
+                id: 3, 
+                name: "Two-Toned Cap", 
+                price: 199.00, 
+                type: "cap", 
+                options: ["Cream and Brown", "Aqua and Blue"] 
+            }
         ];
 
         let cart = [];
@@ -219,33 +258,59 @@
         // Render Products on Page Load
         function renderProducts() {
             const grid = document.getElementById('products-grid');
-            grid.innerHTML = products.map(product => `
-                <div class="product-card">
-                    <div>
-                        <h3>${product.name}</h3>
-                        <div class="product-price">₱${product.price.toFixed(2)}</div>
+            grid.innerHTML = products.map(product => {
+                let optionLabel = product.type === 'shirt' ? 'Size:' : 'Color:';
+                let optionsHtml = product.options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+
+                return `
+                    <div class="product-card">
+                        <div>
+                            <h3>${product.name}</h3>
+                            <div class="product-price">₱${product.price.toFixed(2)}</div>
+                            <div class="product-options">
+                                <label>${optionLabel}</label>
+                                <select id="option-${product.id}">
+                                    ${optionsHtml}
+                                </select>
+                                <label>Quantity:</label>
+                                <input type="number" id="qty-${product.id}" value="1" min="1">
+                            </div>
+                        </div>
+                        <button onclick="addToCart(${product.id})">Add to Cart</button>
                     </div>
-                    <button onclick="addToCart(${product.id})">Add to Cart</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        // Add Product to Cart
+        // Add Product to Cart with specific options and quantity
         function addToCart(productId) {
             const product = products.find(p => p.id === productId);
-            const cartItem = cart.find(item => item.id === productId);
+            const selectedOption = document.getElementById(`option-${productId}`).value;
+            const quantityInput = parseInt(document.getElementById(`qty-${productId}`).value) || 1;
 
-            if (cartItem) {
-                cartItem.quantity++;
+            // Unique identifier based on product ID and chosen option (size or color)
+            const cartItemKey = `${productId}-${selectedOption}`;
+            const existingItem = cart.find(item => item.key === cartItemKey);
+
+            if (existingItem) {
+                existingItem.quantity += quantityInput;
             } else {
-                cart.push({ ...product, quantity: 1 });
+                cart.push({
+                    key: cartItemKey,
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    variant: selectedOption,
+                    type: product.type,
+                    quantity: quantityInput
+                });
             }
             renderCart();
         }
 
         // Remove Product from Cart
-        function removeFromCart(productId) {
-            cart = cart.filter(item => item.id !== productId);
+        function removeFromCart(cartItemKey) {
+            cart = cart.filter(item => item.key !== cartItemKey);
             renderCart();
         }
 
@@ -263,13 +328,15 @@
             let total = 0;
             cartList.innerHTML = cart.map(item => {
                 total += item.price * item.quantity;
+                let variantLabel = item.type === 'shirt' ? `Size: ${item.variant}` : `Color: ${item.variant}`;
                 return `
                     <li class="cart-item">
                         <div class="cart-item-details">
                             <strong>${item.name}</strong><br>
+                            <small>${variantLabel}</small><br>
                             ₱${item.price.toFixed(2)} x ${item.quantity}
                         </div>
-                        <button class="remove-btn" onclick="removeFromCart(${item.id})">X</button>
+                        <button class="remove-btn" onclick="removeFromCart('${item.key}')">X</button>
                     </li>
                 `;
             }).join('');
