@@ -81,7 +81,7 @@
         .product-image {
             width: 100%;
             height: 160px;
-            object-fit: cover;
+            object-fit: contain; /* Changed from 'cover' to 'contain' so the image shows fully without cropping */
             border-radius: 6px;
             margin-bottom: 0.8rem;
             background-color: #e0f2f1;
@@ -262,7 +262,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlPz2QIrnIBo_NrFV8_ij7y_W9cTFx5bC7yixTBBXyiMt1KeRrjjBPOQsFZz_mTOL1jA/exec";
+        const WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
 
         const products = [
             { 
